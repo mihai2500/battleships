@@ -15,7 +15,8 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 800px;
+    height: auto;
     margin: 0 auto;
     background-color: #ffffff;
     border-radius: 15px;
@@ -26,12 +27,16 @@ body {
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 20px;
-    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-size: 2em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.015);
 }
 
 h2 {
-    color: #555;
+    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.5em;
 }
 
 h3 {
@@ -61,13 +66,13 @@ h3 {
     background: #ddd;
     padding: 10px;
     border-radius: 5px;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 2px 10px rgba(206, 104, 247, 0.3);
 }
 
 /* Cell Styling */
 .cell{
-    width: 40px;
-    height: 40px;
+    width: 25px;
+    height: 25px;
     background: #e8f4f8;
     border: 1px solid #999;
     cursor: pointer;
@@ -79,7 +84,7 @@ h3 {
 }
 
 .cell:hover {
-    background: #c8e4f0;
+    background: #8ad9fb;
 }
 
 .cell.ship {
@@ -101,4 +106,62 @@ h3 {
 .cell.sunk {
     background: #8b0000;
     color: white;
+}
+
+/* Button layout */
+.setup-controls,
+.game-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+/* Base button */
+.btn {
+    padding: 10px 16px;
+    border: 2px solid #aacdf5;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.7);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #c266ea;
+    color: #fff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #b04ed1;
+}
+
+.btn-success {
+    background: #4caf50;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #43a047;
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleships</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Battleships</h1>
+
+    <div class="game-status">
+      <h2 id="statusMessage">Setup Phase: Place Your Ships</h2>
+      <div id="infoMessage" class="info-message"></div>
+    </div>
+
+    <div class="setup-controls">
+      <button class="btn btn-primary" id="randomPlacementBtn">Random Placement</button>
+      <button class="btn btn-secondary" id="resetBtn">Reset</button>
+      <button class="btn btn-success" id="startGameBtn" disabled>Start Game</button>
+    </div>
+
+    <div class="game-board">
+      <div class="board-section">
+        <h3>Your Board</h3>
+        <div class="grid" id="playerGrid"></div>
+      </div>
+
+      <div class="board-section">
+        <h3>Enemy Board</h3>
+        <div class="grid" id="enemyGrid"></div>
+      </div>
+    </div>
+
+    <div class="ship-legend">
+      <h4>Ships to Place:</h4>
+      <div id="shipsList" class="ships-list"></div>
+    </div>
+
+    <div class="game-controls">
+      <button class="btn btn-primary" id="newGameBtn" style="display: none;">New Game</button>
+    </div>
+
+    <div id="gameOverModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2 id="gameOverTitle">Game Over</h2>
+        <p id="gameOverMessage"></p>
+        <button class="btn btn-primary" onclick="location.reload()">Play Again</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
