@@ -14,13 +14,19 @@ A web-based implementation of the classic Battleships game. Currently in develop
 - **Placement validation** (bounds + no overlap) with clear error messaging
 - **Reset button** to clear board and restart placement
 - **Dynamic status messaging** showing current ship and placement instructions
+- **Random Placement button** - Automatically places all ships randomly on the board
+ - **Ships list auto-updates** hiding already placed ships (works with manual and random placement)
+ - **Attack system**: player clicks enemy grid; blocks repeat shots
+ - **Hit/Miss visuals** on both boards
+ - **Win/Loss detection** for both sides
+ - **Bot opponent (baseline)**: random placement at start, random firing with a 0.8–1.8s delay
+ - **New Game flow**: show "New Game" after win/loss; start/reset hides it
+ - **Ships legend hides during battle** and reappears in placement phase
 
 ### 🚧 To Be Implemented:
-- Random Placement button
-- Attack system (player clicks enemy grid)
-- Hit/miss/sunk visual feedback
-- AI opponent
-- Win/loss conditions
+- Smarter bot attack algorithm (non-random targeting)
+- Sunk-ship feedback/animation
+- Deployment (e.g., GitHub Pages)
 
 ---
 
@@ -48,11 +54,15 @@ A web-based implementation of the classic Battleships game. Currently in develop
 - **Placement logic**: 
   - `canPlaceShip()` - Validates placement (bounds checking + overlap detection)
   - `placeShip()` - Writes ship to grid
+  - `randomPlaceShips()` - Automatically places all 5 ships at random positions with random orientations
   - `updatePlayerGrid()` - Renders visual ship placement
 - **Orientation toggle**: R key switches between horizontal (left→right) and vertical (top→bottom)
 - **Ship selection**: Arrow keys cycle through unplaced ships
 - **Reset functionality**: `resetGame()` clears board and reinitializes placement
-- **Status messaging**: Dynamic UI updates showing current ship, orientation, and instructions
+- **Random placement functionality**: `randomPlaceShips()` auto-places all ships and readies the game
+- **Battle logic**: `handleEnemyCellClick()` for player shots; `botAttack()` for enemy shots; prevents repeat shots and checks win/loss
+- **Status messaging**: Dynamic UI updates showing current ship, orientation, and instructions; shows win/loss prompts
+- **Legend visibility**: hides during battle, shows in placement
 - Initialized on `DOMContentLoaded`
 
 ---
@@ -83,24 +93,29 @@ battleships/
 ## 🎮 How to Play (In Progress)
 
 **Ship Placement Phase:**
-1. Click cells on your board to place ships
-2. Press **R** to toggle orientation (horizontal/vertical)
-3. Use **Arrow Keys** (← →) to switch which ship to place
-4. Click **Reset** to clear the board and restart placement
-5. Once all 5 ships are placed, click **Start Game**
+1. **Manual Placement**: Click cells on your board to place ships
+   - Press **R** to toggle orientation (horizontal/vertical)
+   - Use **Arrow Keys** (← →) to switch which ship to place
+  - The ships list shows only ships you still need to place
+2. **Quick Setup**: Click **Random Placement** to automatically place all ships; the ships list will clear
+3. Click **Reset** to clear the board and restart placement (list repopulates)
+4. Once all 5 ships are placed, click **Start Game**
 
-*Attack and battle phases coming soon.*
+**Battle Phase:**
+1. Click enemy cells to attack (no repeat shots)
+2. Red = hit, dark blue = miss
+3. Bot waits ~1s then fires randomly back at your board
+4. Win by hitting all enemy ship cells; lose if the bot hits all of yours
+5. "New Game" appears after win/loss; Reset always returns to placement
 
 ---
 
 ## 🚧 Next Steps
 
-- [ ] Implement Random Placement button
-- [ ] Add attack system (player vs enemy grid clicks)
-- [ ] Show hit/miss/sunk states visually
-- [ ] Create AI opponent
-- [ ] Add win/loss detection
+- [ ] Smarter bot targeting (hunt + chase)
+- [ ] Add sunk-ship state/visuals
 - [ ] Deploy to GitHub Pages
+- [ ] Audio feedback for hits/misses
 
 ---
 
