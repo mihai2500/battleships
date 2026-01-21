@@ -99,8 +99,8 @@ h3 {
 }
 
 .cell.miss {
-    background: #fff;
-    color: #999;
+    background: #0c3b93;
+    color: #c7d2ff;
 }
 
 .cell.sunk {
