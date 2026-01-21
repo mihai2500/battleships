@@ -154,6 +154,37 @@ function addPlayerGridListeners() {
     });
 }
 
+function randomPlaceShips() {
+    gameState.playerGrid = createEmptyGrid();
+    shipPlacedFlags = Array(SHIPS.length).fill(false);
+    gameState.shipsPlaced = 0;
+    
+    for (let i = 0; i < SHIPS.length; i++) {
+        let placed = false;
+        let attempts = 0;
+        
+        while (!placed && attempts < 100) {
+            const horizontal = Math.random() > 0.5;
+            const row = Math.floor(Math.random() * GRID_SIZE);
+            const col = Math.floor(Math.random() * GRID_SIZE);
+            
+            if (canPlaceShip(gameState.playerGrid, row, col, SHIPS[i].size, horizontal)) {
+                placeShip(gameState.playerGrid, row, col, SHIPS[i].size, horizontal);
+                shipPlacedFlags[i] = true;
+                gameState.shipsPlaced++;
+                placed = true;
+            }
+            attempts++;
+        }
+    }
+    
+    updatePlayerGrid();
+    document.getElementById('statusMessage').textContent = 'All ships placed! Click "Start Game"';
+    document.getElementById('infoMessage').textContent = '';
+    document.getElementById('startGameBtn').disabled = false;
+    currentShipIndex = SHIPS.length;
+}
+
 function resetGame() {
     gameState.playerGrid = createEmptyGrid();
     gameState.shipsPlaced = 0;
@@ -188,6 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
         resetBtn.addEventListener('click', resetGame);
+    }
+
+    // Random placement button listener
+    const randomPlacementBtn = document.getElementById('randomPlacementBtn');
+    if (randomPlacementBtn) {
+        randomPlacementBtn.addEventListener('click', randomPlaceShips);
     }
 
     document.addEventListener('keydown', (event) => {
