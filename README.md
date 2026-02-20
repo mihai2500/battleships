@@ -68,7 +68,7 @@ A web-based implementation of the classic Battleships game. Currently in develop
 
 ---
 
-## 🧠 Hunt Algorithm
+## 🧠 Hunt Algorithm (Bot AI)
 
 The bot uses a two-phase attack strategy and keeps internal state between turns:
 
