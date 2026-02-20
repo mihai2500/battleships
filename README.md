@@ -31,7 +31,6 @@ A web-based implementation of the classic Battleships game. Currently in develop
 ### 🚧 To Be Implemented:
 - Better random-search strategy (parity/probability heatmap)
 - Sunk-ship feedback/animation
-- Deployment (e.g., GitHub Pages)
 
 ---
 
