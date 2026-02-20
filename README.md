@@ -17,21 +17,17 @@ A web-based implementation of the classic Battleships game. Currently in develop
 - **Reset button** to clear board and restart placement
 - **Dynamic status messaging** showing current ship and placement instructions
 - **Random Placement button** - Automatically places all ships randomly on the board
- - **Ships list auto-updates** hiding already placed ships (works with manual and random placement)
- - **Attack system**: player clicks enemy grid; blocks repeat shots
- - **Hit/Miss visuals** on both boards
- - **Win/Loss detection** for both sides
- - **Bot opponent (improved)**: random placement at start, random + hunt firing with a 0.8–1.8s delay
- - **Orientation-aware bot hunting**: after multiple hits, bot continues along ship direction instead of checking all neighbors
- - **Ship-aware bot targeting**: bot tracks a specific discovered ship until it is sunk
- - **Adjacent-ship handling**: incidental hits on nearby ships are queued and hunted next (instead of being lost)
- - **New Game flow**: show "New Game" after win/loss; start/reset hides it
- - **Ships legend hides during battle** and reappears in placement phase
-
-### 🚧 To Be Implemented:
-- Better random-search strategy (parity/probability heatmap)
-- Sunk-ship feedback/animation
-- Deployment (e.g., GitHub Pages)
+- **Ships list auto-updates** hiding already placed ships (works with manual and random placement)
+- **Attack system**: player clicks enemy grid; blocks repeat shots
+- **Hit/Miss visuals** on both boards
+- **Win/Loss detection** for both sides
+- **Bot opponent (improved)**: random placement at start, random + hunt firing with a 0.8–1.8s delay
+- **Orientation-aware bot hunting**: after multiple hits, bot continues along ship direction instead of checking all neighbors
+- **Ship-aware bot targeting**: bot tracks a specific discovered ship until it is sunk
+- **Adjacent-ship handling**: incidental hits on nearby ships are queued and hunted next (instead of being lost)
+- **New Game flow**: show "New Game" after win/loss; start/reset hides it
+- **Ships legend hides during battle** and reappears in placement phase
+- **Deployment complete**: live on GitHub Pages
 
 ---
 
@@ -64,20 +60,15 @@ A web-based implementation of the classic Battleships game. Currently in develop
 - **Orientation toggle**: R key switches between horizontal (left→right) and vertical (top→bottom)
 - **Ship selection**: Arrow keys cycle through unplaced ships
 - **Reset functionality**: `resetGame()` clears board and reinitializes placement
-- **Random placement functionality**: `randomPlaceShips()` auto-places all ships and readies the game
 - **Battle logic**: `handleEnemyCellClick()` for player shots; `botAttack()` for enemy shots; prevents repeat shots and checks win/loss
-- **Bot hunt system**:
-  - Two modes: random search + hunt/chase mode
-  - Direction inference after consecutive hits (`horizontal`/`vertical`)
-  - Continues chasing one ship until sunk using per-cell `shipId`
-  - Queues hits from adjacent ships and resumes them after current ship is sunk
+- **Bot hunt system**: random search + hunt/chase with orientation lock and ship-aware tracking (detailed below)
 - **Status messaging**: Dynamic UI updates showing current ship, orientation, and instructions; shows win/loss prompts
 - **Legend visibility**: hides during battle, shows in placement
 - Initialized on `DOMContentLoaded`
 
 ---
 
-## 🧠 Hunt Algorithm (Bot AI)
+## 🧠 Hunt Algorithm
 
 The bot uses a two-phase attack strategy and keeps internal state between turns:
 
