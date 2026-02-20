@@ -2,6 +2,8 @@
 
 A web-based implementation of the classic Battleships game. Currently in development.
 
+**Live demo:** https://mihai2500.github.io/battleships/
+
 ## 🚀 Current Status
 
 ### ✅ Completed:
@@ -19,12 +21,15 @@ A web-based implementation of the classic Battleships game. Currently in develop
  - **Attack system**: player clicks enemy grid; blocks repeat shots
  - **Hit/Miss visuals** on both boards
  - **Win/Loss detection** for both sides
- - **Bot opponent (baseline)**: random placement at start, random firing with a 0.8–1.8s delay
+ - **Bot opponent (improved)**: random placement at start, random + hunt firing with a 0.8–1.8s delay
+ - **Orientation-aware bot hunting**: after multiple hits, bot continues along ship direction instead of checking all neighbors
+ - **Ship-aware bot targeting**: bot tracks a specific discovered ship until it is sunk
+ - **Adjacent-ship handling**: incidental hits on nearby ships are queued and hunted next (instead of being lost)
  - **New Game flow**: show "New Game" after win/loss; start/reset hides it
  - **Ships legend hides during battle** and reappears in placement phase
 
 ### 🚧 To Be Implemented:
-- Smarter bot attack algorithm (non-random targeting)
+- Better random-search strategy (parity/probability heatmap)
 - Sunk-ship feedback/animation
 - Deployment (e.g., GitHub Pages)
 
@@ -61,9 +66,45 @@ A web-based implementation of the classic Battleships game. Currently in develop
 - **Reset functionality**: `resetGame()` clears board and reinitializes placement
 - **Random placement functionality**: `randomPlaceShips()` auto-places all ships and readies the game
 - **Battle logic**: `handleEnemyCellClick()` for player shots; `botAttack()` for enemy shots; prevents repeat shots and checks win/loss
+- **Bot hunt system**:
+  - Two modes: random search + hunt/chase mode
+  - Direction inference after consecutive hits (`horizontal`/`vertical`)
+  - Continues chasing one ship until sunk using per-cell `shipId`
+  - Queues hits from adjacent ships and resumes them after current ship is sunk
 - **Status messaging**: Dynamic UI updates showing current ship, orientation, and instructions; shows win/loss prompts
 - **Legend visibility**: hides during battle, shows in placement
 - Initialized on `DOMContentLoaded`
+
+---
+
+## 🧠 Hunt Algorithm (Bot AI)
+
+The bot uses a two-phase attack strategy and keeps internal state between turns:
+
+1. **Random Search Phase**
+  - Bot selects an unhit cell at random.
+  - On **miss**, it stays in random mode.
+  - On **hit**, it switches to hunt mode and starts tracking that ship.
+
+2. **Hunt/Chase Phase**
+  - The first hit adds the four orthogonal neighbors as candidates.
+  - After a second aligned hit, the bot infers orientation (`horizontal` or `vertical`).
+  - Once orientation is known, it only targets the two open ends of the current hit chain.
+
+3. **Ship-Scoped Tracking**
+  - Each ship cell has a `shipId`.
+  - Hunt mode is locked to one `huntShipId`, so hits from different ships are not mixed.
+  - The bot keeps chasing that same ship until all its cells are hit (sunk check).
+
+4. **Adjacent-Ship Edge Case Handling**
+  - If a shot during hunt mode hits a different adjacent ship, that hit is saved in a pending queue.
+  - After the current hunted ship is sunk, the bot resumes from queued hits before returning to random mode.
+
+5. **Reset Rules**
+  - Hunt state resets on `Start Game` and `Reset Game`.
+  - If no hunt targets and no pending hits remain, bot falls back to random search.
+
+This avoids the classic bug where the bot loses direction after finding part of a ship or incorrectly abandons a discovered target.
 
 ---
 
@@ -104,7 +145,7 @@ battleships/
 **Battle Phase:**
 1. Click enemy cells to attack (no repeat shots)
 2. Red = hit, dark blue = miss
-3. Bot waits ~1s then fires randomly back at your board
+3. Bot waits ~1s then fires back using random search + hunt/chase behavior
 4. Win by hitting all enemy ship cells; lose if the bot hits all of yours
 5. "New Game" appears after win/loss; Reset always returns to placement
 
@@ -112,9 +153,8 @@ battleships/
 
 ## 🚧 Next Steps
 
-- [ ] Smarter bot targeting (hunt + chase)
+- [ ] Improve random search with parity/probability targeting
 - [ ] Add sunk-ship state/visuals
-- [ ] Deploy to GitHub Pages
 - [ ] Audio feedback for hits/misses
 
 ---

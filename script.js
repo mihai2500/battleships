@@ -27,7 +27,7 @@ function createEmptyGrid() {
     for (let r = 0; r < GRID_SIZE; r++) {
         grid[r] = [];
         for (let c = 0; c < GRID_SIZE; c++) {
-            grid[r][c] = { hasShip: false, isHit: false };
+            grid[r][c] = { hasShip: false, isHit: false, shipId: null };
         }
     }
     return grid;
@@ -92,14 +92,16 @@ function canPlaceShip(grid, row, col, size, horizontal) {
     return true;
 }
 
-function placeShip(grid, row, col, size, horizontal) {
+function placeShip(grid, row, col, size, horizontal, shipId = null) {
     if (horizontal) {
         for (let i = 0; i < size; i++) {
             grid[row][col + i].hasShip = true;
+            grid[row][col + i].shipId = shipId;
         }
     } else {
         for (let i = 0; i < size; i++) {
             grid[row + i][col].hasShip = true;
+            grid[row + i][col].shipId = shipId;
         }
     }
 }
@@ -178,7 +180,7 @@ function handleCellClick(event) {
     const ship = SHIPS[currentShipIndex];
     
     if (canPlaceShip(gameState.playerGrid, row, col, ship.size, isHorizontal)) {
-        placeShip(gameState.playerGrid, row, col, ship.size, isHorizontal);
+        placeShip(gameState.playerGrid, row, col, ship.size, isHorizontal, currentShipIndex);
         updatePlayerGrid();
         
         shipPlacedFlags[currentShipIndex] = true;
@@ -270,9 +272,178 @@ function markPlayerCell(row, col, result) {
     cellEl.classList.add(result);
 }
 
-function botAttack() {
-    if (gameState.gamePhase !== 'battle') return;
+let mode = 'random'; // default attack mode for bot
+let botTargetQueue = []; // for hunt mode, stores cells to target after a hit
+let botHitChain = []; // consecutive successful hits for current hunted ship
+let huntOrientation = null; // 'horizontal' | 'vertical' | null
+let huntShipId = null; // the ship currently being chased
+let botPendingHits = []; // hits from different ships found while hunting current ship
 
+function getAdjacentCells(row, col) {
+    const adjacent = [];
+    if (row > 0) adjacent.push({ row: row - 1, col });
+    if (row < GRID_SIZE - 1) adjacent.push({ row: row + 1, col });
+    if (col > 0) adjacent.push({ row, col: col - 1 });
+    if (col < GRID_SIZE - 1) adjacent.push({ row, col: col + 1 });
+    return adjacent;
+}
+
+function isQueued(row, col) {
+    return botTargetQueue.some(cell => cell.row === row && cell.col === col);
+}
+
+function isPendingHit(row, col) {
+    return botPendingHits.some(cell => cell.row === row && cell.col === col);
+}
+
+function enqueueIfValid(row, col) {
+    if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) return;
+    const cellData = gameState.playerGrid[row][col];
+    if (cellData.isHit || isQueued(row, col)) return;
+    botTargetQueue.push({ row, col });
+}
+
+function addHuntTargets(row, col) {
+    const adjacent = getAdjacentCells(row, col);
+    for (const cell of adjacent) {
+        enqueueIfValid(cell.row, cell.col);
+    }
+}
+
+function determineOrientationFromHits() {
+    if (botHitChain.length < 2) return null;
+
+    for (let i = 0; i < botHitChain.length; i++) {
+        for (let j = i + 1; j < botHitChain.length; j++) {
+            if (botHitChain[i].row === botHitChain[j].row) return 'horizontal';
+            if (botHitChain[i].col === botHitChain[j].col) return 'vertical';
+        }
+    }
+
+    return null;
+}
+
+function isShipSunk(grid, shipId) {
+    if (shipId === null || shipId === undefined) return false;
+
+    for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+            const cell = grid[row][col];
+            if (cell.hasShip && cell.shipId === shipId && !cell.isHit) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function addTargetsAlongOrientation() {
+    if (!huntOrientation || botHitChain.length === 0) return;
+
+    botTargetQueue = [];
+
+    if (huntOrientation === 'horizontal') {
+        const row = botHitChain[0].row;
+        const cols = botHitChain.map(hit => hit.col);
+        const minCol = Math.min(...cols);
+        const maxCol = Math.max(...cols);
+        enqueueIfValid(row, minCol - 1);
+        enqueueIfValid(row, maxCol + 1);
+    } else {
+        const col = botHitChain[0].col;
+        const rows = botHitChain.map(hit => hit.row);
+        const minRow = Math.min(...rows);
+        const maxRow = Math.max(...rows);
+        enqueueIfValid(minRow - 1, col);
+        enqueueIfValid(maxRow + 1, col);
+    }
+}
+
+function registerBotHit(row, col) {
+    const shipId = gameState.playerGrid[row][col].shipId;
+
+    if (huntShipId === null) {
+        huntShipId = shipId;
+    }
+
+    if (shipId !== huntShipId) {
+        if (!isPendingHit(row, col)) {
+            botPendingHits.push({ row, col, shipId });
+        }
+        return;
+    }
+
+    const alreadyInChain = botHitChain.some(hit => hit.row === row && hit.col === col);
+    if (!alreadyInChain) {
+        botHitChain.push({ row, col });
+    }
+
+    if (botHitChain.length === 1) {
+        addHuntTargets(row, col);
+        return;
+    }
+
+    if (!huntOrientation) {
+        huntOrientation = determineOrientationFromHits();
+    }
+
+    if (huntOrientation) {
+        addTargetsAlongOrientation();
+    } else {
+        addHuntTargets(row, col);
+    }
+}
+
+function startHuntFromPendingHit() {
+    while (botPendingHits.length > 0) {
+        const seed = botPendingHits.pop();
+        if (isShipSunk(gameState.playerGrid, seed.shipId)) {
+            continue;
+        }
+
+        mode = 'hunt';
+        huntShipId = seed.shipId;
+        botHitChain = [{ row: seed.row, col: seed.col }];
+        huntOrientation = null;
+        botTargetQueue = [];
+        addHuntTargets(seed.row, seed.col);
+        return true;
+    }
+
+    return false;
+}
+
+function finalizeHuntIfSunk() {
+    if (huntShipId !== null && isShipSunk(gameState.playerGrid, huntShipId)) {
+        botTargetQueue = [];
+        botHitChain = [];
+        huntOrientation = null;
+        huntShipId = null;
+
+        if (!startHuntFromPendingHit()) {
+            mode = 'random';
+        }
+    }
+}
+
+function resetBotHuntState() {
+    mode = 'random';
+    botTargetQueue = [];
+    botHitChain = [];
+    huntOrientation = null;
+    huntShipId = null;
+    botPendingHits = [];
+}
+
+function getHuntTarget() {
+    if (botTargetQueue.length > 0) {
+        return botTargetQueue.pop();
+    }
+    return null;
+}
+
+function randomAttack() {
     // Find a random untargeted cell
     let row = 0;
     let col = 0;
@@ -292,6 +463,9 @@ function botAttack() {
 
     if (cellData.hasShip) {
         markPlayerCell(row, col, 'hit');
+        mode = 'hunt'; // switch to hunt mode after a hit
+        registerBotHit(row, col);
+        finalizeHuntIfSunk();
         gameState.playerHits++;
         document.getElementById('statusMessage').textContent = 'Enemy hit your ship!';
         document.getElementById('infoMessage').textContent = 'Your turn to strike back.';
@@ -313,6 +487,67 @@ function botAttack() {
     gameState.currentTurn = 'player';
 }
 
+function huntAttack() {
+    let target = getHuntTarget();
+
+    if (!target) {
+        if (startHuntFromPendingHit()) {
+            target = getHuntTarget();
+        }
+
+        if (!target) {
+            // No more targets in queue, switch back to random
+            resetBotHuntState();
+            randomAttack();
+            return;
+        }
+
+        mode = 'hunt';
+    }
+    const cellData = gameState.playerGrid[target.row][target.col];
+
+    if (cellData.isHit) {
+        // If already hit, try another target
+        huntAttack();
+        return;
+    }
+
+    cellData.isHit = true;
+
+    if (cellData.hasShip) {
+        markPlayerCell(target.row, target.col, 'hit');
+        registerBotHit(target.row, target.col);
+        finalizeHuntIfSunk();
+        gameState.playerHits++;
+        document.getElementById('statusMessage').textContent = 'Enemy hit your ship!';
+        document.getElementById('infoMessage').textContent = 'Your turn to strike back.';
+
+        if (gameState.playerHits >= TOTAL_SHIP_CELLS) {
+            gameState.gamePhase = 'finished';
+            document.getElementById('statusMessage').textContent = 'Defeat. Enemy sunk all your ships.';
+            document.getElementById('infoMessage').textContent = 'Press Reset or New Game to try again.';
+            const newGameBtn = document.getElementById('newGameBtn');
+            if (newGameBtn) newGameBtn.style.display = 'inline-block';
+            return;
+        }
+    } else {
+        markPlayerCell(target.row, target.col, 'miss');
+        document.getElementById('statusMessage').textContent = 'Enemy missed.';
+        document.getElementById('infoMessage').textContent = 'Your turn to attack.';
+    }
+
+    gameState.currentTurn = 'player';
+}
+
+function botAttack() {
+    if (gameState.gamePhase !== 'battle') return;
+    if(mode === 'random') {
+        randomAttack();
+    } else if(mode === 'hunt') {
+        huntAttack();
+    }
+}
+
 function randomPlaceShips() {
     gameState.playerGrid = createEmptyGrid();
     shipPlacedFlags = Array(SHIPS.length).fill(false);
@@ -328,7 +563,7 @@ function randomPlaceShips() {
             const col = Math.floor(Math.random() * GRID_SIZE);
             
             if (canPlaceShip(gameState.playerGrid, row, col, SHIPS[i].size, horizontal)) {
-                placeShip(gameState.playerGrid, row, col, SHIPS[i].size, horizontal);
+                placeShip(gameState.playerGrid, row, col, SHIPS[i].size, horizontal, i);
                 shipPlacedFlags[i] = true;
                 gameState.shipsPlaced++;
                 placed = true;
@@ -360,7 +595,7 @@ function randomPlaceEnemyShips() {
             const col = Math.floor(Math.random() * GRID_SIZE);
 
             if (canPlaceShip(gameState.enemyGrid, row, col, SHIPS[i].size, horizontal)) {
-                placeShip(gameState.enemyGrid, row, col, SHIPS[i].size, horizontal);
+                placeShip(gameState.enemyGrid, row, col, SHIPS[i].size, horizontal, i);
                 placed = true;
             }
             attempts++;
@@ -380,6 +615,7 @@ function startGame() {
     gameState.gamePhase = 'battle';
     gameState.currentTurn = 'player';
     gameState.playerHits = 0;
+    resetBotHuntState();
 
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) startBtn.disabled = true;
@@ -401,6 +637,7 @@ function resetGame() {
     currentShipIndex = 0;
     isHorizontal = true;
     shipPlacedFlags = Array(SHIPS.length).fill(false);
+    resetBotHuntState();
 
     updatePlayerGrid();
     updateOrientationUI();
